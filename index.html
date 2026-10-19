@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cyberpunk Neon Clock | Project 24</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    body {
+      font-family: 'Share Tech Mono', monospace;
+      background-color: #05050a;
+      color: #00f0ff;
+    }
+    .font-orbitron { font-family: 'Orbitron', sans-serif; }
+    
+    /* Cyberpunk Grid Background */
+    .bg-cyber-grid {
+      background-image: 
+        linear-gradient(to right, rgba(0, 240, 255, 0.05) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(255, 0, 127, 0.05) 1px, transparent 1px);
+      background-size: 40px 40px;
+    }
+    
+    /* Glowing Effects */
+    .glow-cyan {
+      text-shadow: 0 0 10px rgba(0, 240, 255, 0.7), 0 0 20px rgba(0, 240, 255, 0.5), 0 0 40px rgba(0, 240, 255, 0.3);
+    }
+    .glow-pink {
+      text-shadow: 0 0 10px rgba(255, 0, 127, 0.7), 0 0 20px rgba(255, 0, 127, 0.5), 0 0 40px rgba(255, 0, 127, 0.3);
+    }
+    .box-glow-cyan {
+      box-shadow: 0 0 25px rgba(0, 240, 255, 0.25), inset 0 0 15px rgba(0, 240, 255, 0.1);
+    }
+    .box-glow-pink {
+      box-shadow: 0 0 25px rgba(255, 0, 127, 0.25), inset 0 0 15px rgba(255, 0, 127, 0.1);
+    }
+
+    /* Scanlines Overlay */
+    .scanlines::before {
+      content: " ";
+      display: block;
+      position: absolute;
+      top: 0; left: 0; bottom: 0; right: 0;
+      background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%);
+      background-size: 100% 4px;
+      z-index: 20;
+      pointer-events: none;
+      opacity: 0.6;
+    }
+
+    @keyframes pulse-slow {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
+    }
+    .animate-colon { animation: pulse-slow 1s infinite; }
+  </style>
+</head>
+<body class="min-h-screen bg-cyber-grid relative overflow-x-hidden flex flex-col justify-between scanlines p-4 sm:p-8">
+
+  <!-- Top Bar / Header -->
+  <header class="flex justify-between items-center border-b border-cyan-500/30 pb-4 max-w-5xl mx-auto w-full z-30">
+    <div class="flex items-center gap-3">
+      <i data-lucide="cpu" class="w-7 h-7 text-cyan-400 animate-pulse"></i>
+      <h1 class="font-orbitron font-extrabold text-xl sm:text-2xl tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-pink-500 to-purple-500">
+        CYBER_TIME // 2026
+      </h1>
+    </div>
+    <div class="flex items-center gap-3 text-xs sm:text-sm">
+      <span class="px-3 py-1 bg-cyan-950/60 border border-cyan-500/40 rounded text-cyan-300 flex items-center gap-2">
+        <span class="w-2 h-2 rounded-full bg-cyan-400 animate-ping"></span> ONLINE
+      </span>
+    </div>
+  </header>
+
+  <!-- Main Clock Display -->
+  <main class="max-w-4xl mx-auto w-full flex flex-col items-center justify-center my-8 z-30">
+    
+    <!-- Location & Controls Container -->
+    <div class="w-full flex flex-col sm:flex-row justify-between items-center gap-4 mb-6">
+      <!-- World Time Dropdown -->
+      <div class="flex items-center gap-2 bg-slate-900/80 border border-cyan-500/40 px-4 py-2 rounded-lg w-full sm:w-auto">
+        <i data-lucide="globe" class="w-4 h-4 text-pink-500"></i>
+        <span class="text-xs text-slate-400">ZONE:</span>
+        <select id="timezoneSelect" onchange="updateClock()" class="bg-transparent text-cyan-300 text-sm focus:outline-none font-orbitron cursor-pointer">
+          <option value="Asia/Kolkata" selected class="bg-slate-900 text-cyan-300">New Delhi (IST)</option>
+          <option value="Asia/Tokyo" class="bg-slate-900 text-cyan-300">Tokyo (JST)</option>
+          <option value="America/New_York" class="bg-slate-900 text-cyan-300">New York (EST)</option>
+          <option value="Europe/London" class="bg-slate-900 text-cyan-300">London (GMT)</option>
+          <option value="Asia/Dubai" class="bg-slate-900 text-cyan-300">Dubai (GST)</option>
+          <option value="Australia/Sydney" class="bg-slate-900 text-cyan-300">Sydney (AEST)</option>
+        </select>
+      </div>
+
+      <!-- Format Switcher -->
+      <div class="flex items-center gap-2 bg-slate-900/80 border border-pink-500/40 p-1 rounded-lg">
+        <button id="btn12" onclick="setFormat('12')" class="px-3 py-1 rounded text-xs font-orbitron font-bold transition-all bg-pink-600 text-white">12H</button>
+        <button id="btn24" onclick="setFormat('24')" class="px-3 py-1 rounded text-xs font-orbitron font-bold transition-all text-slate-400 hover:text-cyan-300">24H</button>
+      </div>
+    </div>
+
+    <!-- Clock Box -->
+    <div class="w-full bg-slate-950/80 border-2 border-cyan-500/50 rounded-2xl p-6 sm:p-12 box-glow-cyan text-center relative overflow-hidden backdrop-blur-md">
+      
+      <!-- Decorative Corner Accents -->
+      <div class="absolute top-2 left-2 w-4 h-4 border-t-2 border-l-2 border-pink-500"></div>
+      <div class="absolute top-2 right-2 w-4 h-4 border-t-2 border-r-2 border-pink-500"></div>
+      <div class="absolute bottom-2 left-2 w-4 h-4 border-b-2 border-l-2 border-pink-500"></div>
+      <div class="absolute bottom-2 right-2 w-4 h-4 border-b-2 border-r-2 border-pink-500"></div>
+
+      <!-- Digital Date -->
+      <div id="dateDisplay" class="text-sm sm:text-xl font-orbitron tracking-widest text-pink-500 mb-4 font-bold glow-pink">
+        MON, 19 OCT 2026
+      </div>
+
+      <!-- Digital Time -->
+      <div class="flex items-center justify-center font-orbitron font-black text-5xl sm:text-8xl tracking-tight my-2">
+        <span id="hours" class="text-cyan-400 glow-cyan">00</span>
+        <span class="animate-colon text-pink-500 mx-1 sm:mx-2 glow-pink">:</span>
+        <span id="minutes" class="text-cyan-400 glow-cyan">00</span>
+        <span class="animate-colon text-pink-500 mx-1 sm:mx-2 glow-pink">:</span>
+        <span id="seconds" class="text-pink-500 glow-pink">00</span>
+        <span id="ampm" class="text-xs sm:text-2xl text-cyan-300 ml-2 sm:ml-4 font-normal tracking-normal self-end mb-2 sm:mb-4">PM</span>
+      </div>
+
+      <!-- Status Indicator -->
+      <div class="mt-6 flex justify-center items-center gap-6 text-xs text-slate-400 border-t border-slate-800 pt-4">
+        <span>UTC OFFSET: <strong id="utcOffset" class="text-cyan-400">+05:30</strong></span>
+        <span>DAYLIGHT: <strong class="text-pink-400">ACTIVE</strong></span>
+      </div>
+    </div>
+
+    <!-- Stopwatch & Utility Panel -->
+    <div class="w-full grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
+      
+      <!-- Stopwatch Tool -->
+      <div class="bg-slate-950/70 border border-cyan-500/30 rounded-xl p-5 box-glow-cyan flex flex-col justify-between">
+        <div class="flex justify-between items-center mb-3">
+          <span class="text-xs font-orbitron text-cyan-400 flex items-center gap-2">
+            <i data-lucide="timer" class="w-4 h-4"></i> CHRONO // STOPWATCH
+          </span>
+        </div>
+        <div id="swDisplay" class="font-orbitron text-3xl font-bold text-center text-pink-400 my-2 glow-pink">
+          00:00:00
+        </div>
+        <div class="flex justify-center gap-3 mt-3">
+          <button onclick="startStopwatch()" id="swStartBtn" class="bg-cyan-600 hover:bg-cyan-500 text-slate-950 font-bold px-4 py-1.5 rounded text-xs font-orbitron transition">START</button>
+          <button onclick="pauseStopwatch()" class="bg-pink-600 hover:bg-pink-500 text-white font-bold px-4 py-1.5 rounded text-xs font-orbitron transition">PAUSE</button>
+          <button onclick="resetStopwatch()" class="border border-slate-700 hover:border-slate-500 text-slate-300 px-4 py-1.5 rounded text-xs font-orbitron transition">RESET</button>
+        </div>
+      </div>
+
+      <!-- Cyber Stats Box -->
+      <div class="bg-slate-950/70 border border-pink-500/30 rounded-xl p-5 box-glow-pink flex flex-col justify-between">
+        <div class="flex justify-between items-center mb-2">
+          <span class="text-xs font-orbitron text-pink-400 flex items-center gap-2">
+            <i data-lucide="terminal" class="w-4 h-4"></i> SYSTEM STATS
+          </span>
+        </div>
+        <div class="text-xs space-y-2 text-slate-300">
+          <div class="flex justify-between border-b border-slate-800 pb-1">
+            <span>PROJECT:</span> <span class="text-cyan-400 font-bold">PROJECT #24</span>
+          </div>
+          <div class="flex justify-between border-b border-slate-800 pb-1">
+            <span>FRAMEWORK:</span> <span class="text-pink-400">VANILLA JS / TAILWIND</span>
+          </div>
+          <div class="flex justify-between">
+            <span>GOAL STREAK:</span> <span class="text-cyan-400 font-bold">24 / 30 DONE</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="text-center text-xs text-slate-500 border-t border-slate-800/60 pt-4 max-w-5xl mx-auto w-full z-30">
+    CYBERPUNK NEON CLOCK &copy; 2026 // BUILT BY FARHAD
+  </footer>
+
+  <script>
+    lucide.createIcons();
+
+    let timeFormat = '12';
+    let swInterval = null;
+    let swTime = 0; // in deciseconds (100ms)
+
+    function setFormat(fmt) {
+      timeFormat = fmt;
+      const b12 = document.getElementById('btn12');
+      const b24 = document.getElementById('btn24');
+      
+      if(fmt === '12') {
+        b12.className = 'px-3 py-1 rounded text-xs font-orbitron font-bold transition-all bg-pink-600 text-white';
+        b24.className = 'px-3 py-1 rounded text-xs font-orbitron font-bold transition-all text-slate-400 hover:text-cyan-300';
+      } else {
+        b24.className = 'px-3 py-1 rounded text-xs font-orbitron font-bold transition-all bg-cyan-600 text-slate-950';
+        b12.className = 'px-3 py-1 rounded text-xs font-orbitron font-bold transition-all text-slate-400 hover:text-pink-300';
+      }
+      updateClock();
+    }
+
+    function updateClock() {
+      const tz = document.getElementById('timezoneSelect').value;
+      const now = new Date();
+
+      // Format options for Date & Time in chosen Timezone
+      const optionsDate = { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric', timeZone: tz };
+      const dateStr = new Intl.DateTimeFormat('en-US', optionsDate).format(now).toUpperCase();
+      document.getElementById('dateDisplay').innerText = dateStr;
+
+      // Extract time parts using Intl
+      const timeOptions = { timeZone: tz, hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: timeFormat === '12' };
+      const timeParts = new Intl.DateTimeFormat('en-US', timeOptions).formatToParts(now);
+
+      let hrs = '00', mins = '00', secs = '00', ampmVal = '';
+
+      timeParts.forEach(p => {
+        if(p.type === 'hour') hrs = p.value;
+        if(p.type === 'minute') mins = p.value;
+        if(p.type === 'second') secs = p.value;
+        if(p.type === 'dayPeriod') ampmVal = p.value.toUpperCase();
+      });
+
+      document.getElementById('hours').innerText = hrs;
+      document.getElementById('minutes').innerText = mins;
+      document.getElementById('seconds').innerText = secs;
+      document.getElementById('ampm').innerText = timeFormat === '12' ? ampmVal : '';
+
+      // Update UTC Offset label roughly
+      const offsetMap = {
+        'Asia/Kolkata': '+05:30',
+        'Asia/Tokyo': '+09:00',
+        'America/New_York': '-04:00',
+        'Europe/London': '+01:00',
+        'Asia/Dubai': '+04:00',
+        'Australia/Sydney': '+11:00'
+      };
+      document.getElementById('utcOffset').innerText = offsetMap[tz] || 'UTC';
+    }
+
+    setInterval(updateClock, 1000);
+    updateClock();
+
+    // Stopwatch Logic
+    function startStopwatch() {
+      if(swInterval) return;
+      swInterval = setInterval(() => {
+        swTime++;
+        let m = Math.floor(swTime / 600);
+        let s = Math.floor((swTime % 600) / 10);
+        let ms = swTime % 10;
+
+        let mStr = m < 10 ? '0' + m : m;
+        let sStr = s < 10 ? '0' + s : s;
+
+        document.getElementById('swDisplay').innerText = `${mStr}:${sStr}:${ms}0`;
+      }, 100);
+    }
+
+    function pauseStopwatch() {
+      clearInterval(swInterval);
+      swInterval = null;
+    }
+
+    function resetStopwatch() {
+      pauseStopwatch();
+      swTime = 0;
+      document.getElementById('swDisplay').innerText = '00:00:00';
+    }
+  </script>
+</body>
+</html>
